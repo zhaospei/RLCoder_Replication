@@ -2,6 +2,8 @@ python main.py \
     --eval \
     --weighted_keywords \
     --enable_generation \
+    --debug \
+    --enable_tqdm \
     --inference_type unixcoder_with_rl \
     --generator_model_path deepseek-ai/deepseek-coder-6.7b-base \
     --retriever_model_path 'nov3630/RLRetriever' \
