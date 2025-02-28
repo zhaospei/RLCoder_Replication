@@ -101,6 +101,17 @@ def get_bracket_lang_statement(completion):
             break
     return completion[:end_idx + 1] if end_idx else completion
 
+def java_get_bracket_lang_function(completion):
+    cur_bracket = 0
+    for idx, c in enumerate(completion):
+        if c == '{':
+            cur_bracket += 1
+        elif c == '}':
+            cur_bracket -= 1
+        if cur_bracket < 0:
+            return completion[:idx]
+    return completion
+
 
 @timeout_decorator.timeout(5)
 def get_ast(parser, code):
@@ -160,10 +171,12 @@ def get_python_one_statement(prompt, completion, parser):
 
 def postprocess_code_lines(prompt, completion, parser, lang):
     try:
-        if lang in ["java", "csharp", "typescript"]:
+        if lang in ["csharp", "typescript"]:
             return get_bracket_lang_statement(completion)
         elif lang == "python":
             return get_python_one_statement(prompt, completion, parser)
+        elif lang == "java":
+            return java_get_bracket_lang_function(completion)
     except Exception as e:
         return completion
 
