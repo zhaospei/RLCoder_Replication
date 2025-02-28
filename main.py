@@ -125,8 +125,8 @@ def run(args):
     # repoeval_api_examples = load_test_dataset(args, "repoeval", "api_level")
     # repoeval_func_examples = load_test_dataset(args, "repoeval", "func_level")
 
-    training_raw_data, eval_raw_data = load_train_and_valid_dataset()
-    eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
+    # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
+    # eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
 
     all_eval_examples = {
         # "github_eval": eval_all_examples,
