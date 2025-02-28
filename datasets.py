@@ -77,7 +77,7 @@ def load_test_dataset(args, datasetname, language):
         language = 'java'
 
     if args.debug:
-        data_frame = data_frame.sample(100)
+        data_frame = data_frame.sample(5)
     dataset = []
     for item in data_frame[["task_id", "path", "left_context", "right_context", "crossfile_context", "groundtruth"]].values:
         cross_files = item[4] if len(item[4]) > 0 else [{'path': "", "text": "Don't need cross file context for completion"}]
