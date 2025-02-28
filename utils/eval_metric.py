@@ -48,7 +48,7 @@ def process_examples(lang, args):
 
     prediction = postprocess_code_lines(ex["prompt"], sample["pred"], parser, lang)
     prediction = remove_comments(prediction)
-    target = ex["groundtruth"]
+    target = ex["ground_truth"]
     target = remove_comments(target)
 
     pred_lines = [l.strip() for l in prediction.split("\n") if l.strip()]
@@ -83,7 +83,7 @@ def compute_metric_stmt(output_dir, prompt_file, language="python", ts_lib="util
             if ex["metadata"]["task_id"] in task_ids:
                 examples[ex["metadata"]["task_id"]] = {
                     "prompt": ex["prompt"],
-                    "groundtruth": ex["groundtruth"]
+                    "ground_truth": ex['metadata']['ground_truth']
                 }
     
     assert len(samples) == len(examples), f"{len(samples)} != {len(examples)}"
