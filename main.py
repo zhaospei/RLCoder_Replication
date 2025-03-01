@@ -115,6 +115,51 @@ class CustomDataset(Dataset):
         candidate_tokens_id = [tokenize(str(x), self.tokenizer, self.max_candidate_length, False) for x in self.candidates[idx]]
         return torch.tensor(query_tokens_id, dtype=torch.long), torch.tensor(candidate_tokens_id, dtype=torch.long), torch.tensor(self.labels[idx], dtype=torch.long)
 
+class PromptDataset(Dataset):
+    """
+    A dataset class for code generation.
+
+    Args:
+        args: Configuration parameters.
+        tokenizer: Tokenizer.
+        examples: A collection of examples.
+        retrieved_codeblocks: Retrieved code blocks.
+    """
+    def __init__(self, args, tokenizer, examples, retrieved_codeblocks, generation=False):
+        self.args = args
+        self.tokenizer = tokenizer
+        self.examples = examples
+        self.retrieved_codeblocks = retrieved_codeblocks
+        self.generation = generation
+
+    def __len__(self):
+        return len(self.examples)
+
+    def construct_prompts(self,example,retrieved_codeblocks):
+        filter_codeblocks = []
+        for x in retrieved_codeblocks:
+            # Keep only the blocks before the empty block
+            if x.file_path != "":
+                filter_codeblocks.append(x)
+            else:
+                break
+        crossfile_context = "\n\n".join([str(retrieved_codeblock) for retrieved_codeblock in filter_codeblocks])
+        crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length*10], add_special_tokens=False)[:self.args.generator_max_crossfile_length]
+        path_context = f"\n\n# file path: {example.file_path}\n\n"
+        path_context = self.tokenizer.encode(path_context, add_special_tokens=False)
+        allowed_prompt_length = self.args.generator_max_context_length - (len(crossfile_context)+len(path_context)+10)
+        infile_context = self.tokenizer.encode(example.left_context, add_special_tokens=False)[-allowed_prompt_length:]
+
+        prompt = self.tokenizer.decode(crossfile_context + path_context + infile_context)
+        return prompt
+
+    def __getitem__(self, idx):
+        example = self.examples[idx]
+        retrieved_codeblocks = self.retrieved_codeblocks[idx]
+        prompt = self.construct_prompts(example,retrieved_codeblocks)
+        
+        return prompt
+
 def run(args):
     # cceval_python_examples = load_test_dataset(args, "cceval", "python")
     # cceval_java_examples = load_test_dataset(args, "cceval", "java")
@@ -183,7 +228,12 @@ def run(args):
                 #         print(retrieved_codeblocks[i][j].code_content)
                 losses = generator.evaluate(examples, retrieved_codeblocks)
 
-
+                prompt_dataset = PromptDataset(args, generator.tokenizer, examples, retrieved_codeblocks,generation=True)
+                if not os.path.exists(f"{args.output_dir}/{name}"):
+                    os.makedirs(f"{args.output_dir}/{name}", exist_ok=True)
+                with open(f"{args.output_dir}/{name}/retrived_prompt.jsonl", "w", encoding="utf-8") as f_pred:
+                    for example, prompt in zip(examples, prompt_dataset):
+                        f_pred.write(json.dumps({"task_id": example.task_id, "retrived_prompt": prompt}) + "\n")
                 results = {"em": "-","es": "-","id_em": "-","id_f1": "-"}
                 if args.enable_generation:
                     generations = generator.generate(temp_examples, retrieved_codeblocks, args.generator_max_generation_length)
